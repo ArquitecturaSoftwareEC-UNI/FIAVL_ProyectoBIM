@@ -32,7 +32,7 @@ La Vista Lógica responde una sola pregunta: **¿qué cosas existen en el festiv
 
 ## 2. Panorama conceptual (Diagrama 1)
 
-Vista de pájaro: las 15 clases del dominio y sus relaciones, sin detalles. Si solo vas a mirar un diagrama, mira este.
+Vista de pájaro: las 15 clases del dominio y sus relaciones, sin detalles. Si solo vas a mirar un diagrama para entender el negocio, mira este. Para estudiar el modelo completo, ve al Diagrama 2 (§5.0).
 
 ```mermaid
 classDiagram
@@ -192,6 +192,247 @@ Filtro 1: ¿se recuerda a largo plazo? · Filtro 2: ¿tiene más de un atributo 
 
 ## 5. Modelo UML 2.5.1
 
+### 5.0 Diagrama 2 — Modelo completo (todas las clases con atributos, operaciones y enumeraciones)
+
+Es el diagrama de clases **completo** para estudiar el modelo de una sola vez: 15 clases `«entity»`, 10 `«enumeration»` y las 20 relaciones. Es grande, así que conviene hacer zoom; hay una [imagen de alta resolución](./exports/02-logical-view-full.png) y la versión editable en draw.io (página *2 Especificación*). Los Diagramas 2A, 2B y 2C de §5.1 son este mismo modelo, partido en zonas para leerlo con más comodidad.
+
+```mermaid
+classDiagram
+  direction LR
+  class Persona {
+    <<entity>>
+    -nombre : Texto
+    -correo : Texto
+    -credencial : Texto
+    +verificarCredencial(credencial) Booleano
+  }
+  class Asistente {
+    <<entity>>
+    +tieneConsentimiento(canal) Booleano
+    +cuposReservadosEn(actividad) Entero
+  }
+  class Organizador {
+    <<entity>>
+    +esAutorizado() Booleano
+  }
+  class Consentimiento {
+    <<entity>>
+    -canal : CanalNotificacion
+    -finalidad : Texto
+    -estado : EstadoConsentimiento
+    -fechaOtorgamiento : FechaHora
+    -fechaRevocacion : FechaHora
+    +otorgar()
+    +revocar()
+    +estaVigente() Booleano
+  }
+  class EdicionFestival {
+    <<entity>>
+    -nombre : Texto
+    -fechaInicio : Fecha
+    -fechaFin : Fecha
+    -zonaHoraria : Texto
+    -/duracionDias : Entero
+    +contieneFecha(fecha) Booleano
+  }
+  class Sede {
+    <<entity>>
+    -nombre : Texto
+    -direccion : Texto
+    -esCerrada : Booleano
+    -capacidadMaxima : Entero
+    +estaDisponible(inicio, fin) Booleano
+  }
+  class Actividad {
+    <<entity>>
+    -titulo : Texto
+    -descripcion : Texto
+    -disciplina : Texto
+    -modalidad : Modalidad
+    -inicio : FechaHora
+    -fin : FechaHora
+    -estado : EstadoActividad
+    -tarifaReferencial : Dinero
+    +estaVigente() Booleano
+    +admiteReservas() Booleano
+    +seSolapaCon(otra) Booleano
+    +cambiarSala(nuevaSede)
+    +cambiarHorario(inicio, fin)
+    +cancelar()
+  }
+  class Aforo {
+    <<entity>>
+    -aforoHabilitado : Entero
+    -reservadosActivos : Entero
+    -validados : Entero
+    -/disponibles : Entero
+    +descontar(cantidad) Booleano
+    +restituir(cantidad)
+    +confirmarIngreso(cantidad)
+    +estaLleno() Booleano
+  }
+  class Itinerario {
+    <<entity>>
+    -ultimaSincronizacion : FechaHora
+    +incorporar(actividad) ItemItinerario
+    +retirar(actividad)
+    +contiene(actividad) Booleano
+    +evaluarConflictos(actividad) Entero
+  }
+  class ItemItinerario {
+    <<entity>>
+    -fechaAgregado : FechaHora
+    -conflictoMarcado : Booleano
+    +marcarConflicto()
+  }
+  class ReservaCupo {
+    <<entity>>
+    -codigo : Texto
+    -cantidad : Entero
+    -fechaReserva : FechaHora
+    -vencimiento : FechaHora
+    -estado : EstadoReserva
+    +validarIngreso()
+    +cancelar()
+    +vencer()
+    +estaVigente() Booleano
+  }
+  class AlertaOperativa {
+    <<entity>>
+    -tipo : TipoAlerta
+    -mensaje : Texto
+    -fechaPublicacion : FechaHora
+    +generarAviso(asistente) Aviso
+  }
+  class Aviso {
+    <<entity>>
+    -tipo : TipoAviso
+    -mensaje : Texto
+    -fechaEntrega : FechaHora
+    -leido : Booleano
+    +marcarLeido()
+  }
+  class EnvioNotificacion {
+    <<entity>>
+    -canal : CanalNotificacion
+    -estado : EstadoEnvio
+    -intentos : Entero
+    -ultimoIntento : FechaHora
+    +marcarEnviado()
+    +registrarFallo()
+    +reintentar() Booleano
+  }
+  class RegistroAuditoria {
+    <<entity>>
+    -accion : TipoAccion
+    -objetoAfectado : Texto
+    -detalle : Texto
+    -resultado : ResultadoAccion
+    -fechaHora : FechaHora
+  }
+  class Modalidad {
+    <<enumeration>>
+    Gratuita
+    Pagada
+  }
+  class EstadoActividad {
+    <<enumeration>>
+    Programada
+    AforoLleno
+    EnCurso
+    Concluida
+    Cancelada
+  }
+  class EstadoReserva {
+    <<enumeration>>
+    Reservada
+    Validada
+    Cancelada
+    Vencida
+  }
+  class CanalNotificacion {
+    <<enumeration>>
+    CorreoElectronico
+    WebPush
+  }
+  class EstadoConsentimiento {
+    <<enumeration>>
+    Otorgado
+    Revocado
+  }
+  class TipoAlerta {
+    <<enumeration>>
+    CambioDeSala
+    CambioDeHorario
+    Cancelacion
+    AforoLleno
+    AvisoOperativo
+  }
+  class TipoAviso {
+    <<enumeration>>
+    AlertaOperativa
+    ConfirmacionReserva
+    CancelacionReserva
+    Recordatorio
+    AforoLleno
+  }
+  class EstadoEnvio {
+    <<enumeration>>
+    Pendiente
+    Enviado
+    Fallido
+  }
+  class TipoAccion {
+    <<enumeration>>
+    CambioProgramacion
+    PublicacionAlerta
+    ReservaCupo
+    CancelacionReserva
+    ConsentimientoModificado
+    AccesoNoAutorizado
+  }
+  class ResultadoAccion {
+    <<enumeration>>
+    Exitosa
+    Rechazada
+  }
+  Persona "1" -- "0..1" Asistente : actúa como
+  Persona "1" -- "0..1" Organizador : actúa como
+  Asistente "1" *-- "1" Itinerario : posee
+  Itinerario "1" *-- "0..*" ItemItinerario : se compone de
+  ItemItinerario "0..*" --> "1" Actividad : agenda
+  Asistente "1" -- "0..*" ReservaCupo : solicita
+  ReservaCupo "0..*" --> "1" Actividad : reserva cupos de
+  ItemItinerario "0..1" -- "0..1" ReservaCupo : respalda
+  EdicionFestival "1" *-- "1..*" Actividad : programa
+  EdicionFestival "1" o-- "1..*" Sede : utiliza
+  Sede "1" -- "0..*" Actividad : alberga
+  Actividad "1" *-- "0..1" Aforo : limita cupos con
+  Asistente "1" *-- "0..*" Consentimiento : otorga
+  Organizador "1" -- "0..*" AlertaOperativa : publica
+  AlertaOperativa "0..*" --> "0..1" Actividad : afecta a
+  AlertaOperativa "0..*" --> "0..1" Sede : afecta a
+  AlertaOperativa "0..1" -- "0..*" Aviso : origina
+  Asistente "1" -- "0..*" Aviso : recibe
+  Aviso "1" *-- "0..*" EnvioNotificacion : se entrega por
+  Persona "0..1" -- "0..*" RegistroAuditoria : realiza
+  style Persona fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style Asistente fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style Organizador fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style Consentimiento fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style EdicionFestival fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style Sede fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style Actividad fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style Aforo fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style Itinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
+  style ItemItinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
+  style ReservaCupo fill:#F8CECC,stroke:#B85450,color:#1a1a1a
+  style AlertaOperativa fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style Aviso fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style EnvioNotificacion fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style RegistroAuditoria fill:#EEEEEE,stroke:#666666,color:#1a1a1a
+```
+
 ### 5.1 Especificación por zonas (Diagramas 2A, 2B y 2C)
 
 El detalle se reparte en tres diagramas pequeños para que cada uno se entienda por sí solo. Las clases con borde pero sin contenido son solo “contexto” (su detalle está en otro diagrama).
@@ -208,7 +449,7 @@ classDiagram
     -fechaFin : Fecha
     -zonaHoraria : Texto
     -/duracionDias : Entero
-    +contieneFecha(fecha) : Booleano
+    +contieneFecha(fecha) Booleano
   }
   class Sede {
     <<entity>>
@@ -216,7 +457,7 @@ classDiagram
     -direccion : Texto
     -esCerrada : Booleano
     -capacidadMaxima : Entero
-    +estaDisponible(inicio, fin) : Booleano
+    +estaDisponible(inicio, fin) Booleano
   }
   class Actividad {
     <<entity>>
@@ -228,9 +469,9 @@ classDiagram
     -fin : FechaHora
     -estado : EstadoActividad
     -tarifaReferencial : Dinero
-    +estaVigente() : Booleano
-    +admiteReservas() : Booleano
-    +seSolapaCon(otra) : Booleano
+    +estaVigente() Booleano
+    +admiteReservas() Booleano
+    +seSolapaCon(otra) Booleano
     +cambiarSala(nuevaSede)
     +cambiarHorario(inicio, fin)
     +cancelar()
@@ -241,18 +482,18 @@ classDiagram
     -reservadosActivos : Entero
     -validados : Entero
     -/disponibles : Entero
-    +descontar(cantidad) : Booleano
+    +descontar(cantidad) Booleano
     +restituir(cantidad)
     +confirmarIngreso(cantidad)
-    +estaLleno() : Booleano
+    +estaLleno() Booleano
   }
   class Itinerario {
     <<entity>>
     -ultimaSincronizacion : FechaHora
-    +incorporar(actividad) : ItemItinerario
+    +incorporar(actividad) ItemItinerario
     +retirar(actividad)
-    +contiene(actividad) : Booleano
-    +evaluarConflictos(actividad) : Entero
+    +contiene(actividad) Booleano
+    +evaluarConflictos(actividad) Entero
   }
   class ItemItinerario {
     <<entity>>
@@ -281,13 +522,13 @@ classDiagram
   EdicionFestival "1" o-- "1..*" Sede : utiliza
   Sede "1" -- "0..*" Actividad : alberga
   Actividad "1" *-- "0..1" Aforo : limita cupos con
+  style Itinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
+  style Sede fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style Aforo fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style ItemItinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
   style Actividad fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style EdicionFestival fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
-  style Sede fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style Asistente fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style Itinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
 ```
 
 #### Diagrama 2B — Reservas y aforo (`CU-03`, `CU-04`, `CU-08`, `CU-09`)
@@ -305,7 +546,7 @@ classDiagram
     +validarIngreso()
     +cancelar()
     +vencer()
-    +estaVigente() : Booleano
+    +estaVigente() Booleano
   }
   class Aforo {
     <<entity>>
@@ -313,15 +554,15 @@ classDiagram
     -reservadosActivos : Entero
     -validados : Entero
     -/disponibles : Entero
-    +descontar(cantidad) : Booleano
+    +descontar(cantidad) Booleano
     +restituir(cantidad)
     +confirmarIngreso(cantidad)
-    +estaLleno() : Booleano
+    +estaLleno() Booleano
   }
   class Asistente {
     <<entity>>
-    +tieneConsentimiento(canal) : Booleano
-    +cuposReservadosEn(actividad) : Entero
+    +tieneConsentimiento(canal) Booleano
+    +cuposReservadosEn(actividad) Entero
   }
   class Actividad
   class ItemItinerario
@@ -338,9 +579,9 @@ classDiagram
   Actividad "1" *-- "0..1" Aforo : limita cupos con
   style Aforo fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style ItemItinerario fill:#FFE6CC,stroke:#D79B00,color:#1a1a1a
+  style ReservaCupo fill:#F8CECC,stroke:#B85450,color:#1a1a1a
   style Actividad fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
   style Asistente fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style ReservaCupo fill:#F8CECC,stroke:#B85450,color:#1a1a1a
 ```
 
 #### Diagrama 2C — Identidad, avisos, consentimiento y auditoría (`CU-05`, `CU-07`, `CU-10`, `CU-11`)
@@ -353,11 +594,11 @@ classDiagram
     -nombre : Texto
     -correo : Texto
     -credencial : Texto
-    +verificarCredencial(credencial) : Booleano
+    +verificarCredencial(credencial) Booleano
   }
   class Organizador {
     <<entity>>
-    +esAutorizado() : Booleano
+    +esAutorizado() Booleano
   }
   class Consentimiento {
     <<entity>>
@@ -368,14 +609,14 @@ classDiagram
     -fechaRevocacion : FechaHora
     +otorgar()
     +revocar()
-    +estaVigente() : Booleano
+    +estaVigente() Booleano
   }
   class AlertaOperativa {
     <<entity>>
     -tipo : TipoAlerta
     -mensaje : Texto
     -fechaPublicacion : FechaHora
-    +generarAviso(asistente) : Aviso
+    +generarAviso(asistente) Aviso
   }
   class Aviso {
     <<entity>>
@@ -393,7 +634,7 @@ classDiagram
     -ultimoIntento : FechaHora
     +marcarEnviado()
     +registrarFallo()
-    +reintentar() : Booleano
+    +reintentar() Booleano
   }
   class RegistroAuditoria {
     <<entity>>
@@ -462,16 +703,16 @@ classDiagram
   Asistente "1" -- "0..*" Aviso : recibe
   Aviso "1" *-- "0..*" EnvioNotificacion : se entrega por
   Persona "0..1" -- "0..*" RegistroAuditoria : realiza
+  style Persona fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style Sede fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style RegistroAuditoria fill:#EEEEEE,stroke:#666666,color:#1a1a1a
   style EnvioNotificacion fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style Consentimiento fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
   style Organizador fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style Aviso fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
   style Asistente fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
   style AlertaOperativa fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
-  style Sede fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
+  style Aviso fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
   style Actividad fill:#D5E8D4,stroke:#82B366,color:#1a1a1a
-  style Persona fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style Consentimiento fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
-  style RegistroAuditoria fill:#EEEEEE,stroke:#666666,color:#1a1a1a
 ```
 
 Notación: `-` atributo privado, `+` operación pública, `/` atributo derivado (se calcula, no se guarda), `<<entity>>` clase de dominio, `<<enumeration>>` lista cerrada de valores.
@@ -1023,7 +1264,7 @@ Se comprueba que cada caso significativo se puede “contar” usando solo clase
 ## 9. Lista de verificación de la vista
 
 - **R4 (pureza):** sin SQL, `PK`/`FK`, tipos de motor, pantallas, rutas ni DTO; los tipos son abstractos y no hay claves foráneas simuladas como atributos.
-- **R6 (Mermaid):** 6 bloques estándar (`classDiagram` ×4, `stateDiagram-v2` ×2), con identificadores ASCII, validados con `mmdc` sin errores.
+- **R6 (Mermaid):** 7 bloques estándar (`classDiagram` ×5, `stateDiagram-v2` ×2), con identificadores ASCII, validados con `mmdc` sin errores.
 - **R2 (nombres):** ningún paquete se llama `Common`, `Shared`, `Utils` ni similares.
 - **Matriz:** 11/11 casos de uso y 15/15 clases con trazabilidad.
-- **Versión draw.io:** [`02-logical-view.drawio`](./drawio/02-logical-view.drawio) contiene los mismos 15 elementos y 20 relaciones que el Diagrama 1 y el detalle de los Diagramas 2A–2C.
+- **Versión draw.io:** [`02-logical-view.drawio`](./drawio/02-logical-view.drawio) contiene las mismas 15 clases y 20 relaciones que los Diagramas 1 y 2 (página 2 = Diagrama 2 completo).
