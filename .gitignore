@@ -1,0 +1,60 @@
+# Secretos, credenciales y variables de entorno
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Sistema operativo, OneDrive y archivos temporales
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+~$*
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
+
+# IDEs y editores locales
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# Configuraciones locales privadas de agentes
+.claude/settings.local.json
+
+# Entornos virtuales, dependencias y artefactos de compilación (Python / Node / JVM / Build)
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+.pnpm-store/
+.npm/
+dist/
+build/
+out/
+target/
+.next/
+coverage/
+*.log
+
+# Estado local por checkout de github/spec-kit
+.specify/feature.json
+.specify/integrations/packages/
+.specify/integrations/packages.json
