@@ -259,6 +259,8 @@ classDiagram
     +cambiarSala(nuevaSede)
     +cambiarHorario(inicio, fin)
     +cancelar()
+    +marcarAforoLleno()
+    +reabrirAforo()
   }
   class Aforo {
     <<entity>>
@@ -296,6 +298,7 @@ classDiagram
     +cancelar()
     +vencer()
     +estaVigente() Booleano
+    +emitir(codigo, cantidad, vencimiento)
   }
   class AlertaOperativa {
     <<entity>>
@@ -303,6 +306,7 @@ classDiagram
     -mensaje : Texto
     -fechaPublicacion : FechaHora
     +generarAviso(asistente) Aviso
+    +publicar(tipo, mensaje)
   }
   class Aviso {
     <<entity>>
@@ -329,6 +333,7 @@ classDiagram
     -detalle : Texto
     -resultado : ResultadoAccion
     -fechaHora : FechaHora
+    +registrar(accion, objetoAfectado, detalle, resultado)
   }
   class Modalidad {
     <<enumeration>>
@@ -475,6 +480,8 @@ classDiagram
     +cambiarSala(nuevaSede)
     +cambiarHorario(inicio, fin)
     +cancelar()
+    +marcarAforoLleno()
+    +reabrirAforo()
   }
   class Aforo {
     <<entity>>
@@ -547,6 +554,7 @@ classDiagram
     +cancelar()
     +vencer()
     +estaVigente() Booleano
+    +emitir(codigo, cantidad, vencimiento)
   }
   class Aforo {
     <<entity>>
@@ -617,6 +625,7 @@ classDiagram
     -mensaje : Texto
     -fechaPublicacion : FechaHora
     +generarAviso(asistente) Aviso
+    +publicar(tipo, mensaje)
   }
   class Aviso {
     <<entity>>
@@ -643,6 +652,7 @@ classDiagram
     -detalle : Texto
     -resultado : ResultadoAccion
     -fechaHora : FechaHora
+    +registrar(accion, objetoAfectado, detalle, resultado)
   }
   class Asistente
   class Actividad
@@ -993,6 +1003,8 @@ stateDiagram-v2
 | `cambiarSala` | nuevaSede | — | Mueve la actividad a otra sede (RN-05). |
 | `cambiarHorario` | inicio, fin | — | Reprograma la actividad (RN-05). |
 | `cancelar` | — | — | Pasa a Cancelada. |
+| `marcarAforoLleno` | — | — | Transiciona la actividad a AforoLleno al llegar disponibles a 0 (RN-08). |
+| `reabrirAforo` | — | — | Restituye la actividad a Programada al liberarse cupos (RN-08). |
 
 **Multiplicidades exactas:**
 
@@ -1098,6 +1110,7 @@ stateDiagram-v2
 | `cancelar` | — | — | Pasa a Cancelada si está a tiempo (RN-17). |
 | `vencer` | — | — | Pasa a Vencida al cumplirse el plazo. |
 | `estaVigente` | — | Booleano | Reservada y antes de su vencimiento. |
+| `emitir` | codigo, cantidad, vencimiento | — | Registra la reserva en estado Reservada con código y vencimiento (RN-11). |
 
 **Multiplicidades exactas:**
 
@@ -1122,6 +1135,7 @@ stateDiagram-v2
 | Operación | Entrada | Salida | Propósito |
 | :-- | :-- | :-- | :-- |
 | `generarAviso` | asistente | Aviso | Crea el aviso en la bandeja de un afectado. |
+| `publicar` | tipo, mensaje | — | Fija los datos oficiales de la alerta y la marca de tiempo inmutable (RN-16). |
 
 **Multiplicidades exactas:**
 
@@ -1196,7 +1210,9 @@ stateDiagram-v2
 | `resultado` | `ResultadoAccion` | Sí | Exitosa o Rechazada |
 | `fechaHora` | `FechaHora` | Sí | Fijada por el sistema; nunca se modifica |
 
-*Sin operaciones: es un registro inmutable (RN-16).*
+| Operación | Entrada | Salida | Propósito |
+| :-- | :-- | :-- | :-- |
+| `registrar` | accion, objetoAfectado, detalle, resultado | — | Genera y almacena la traza inmutable de auditoría con marca de tiempo del sistema (RN-16). |
 
 **Multiplicidades exactas:**
 
