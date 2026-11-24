@@ -243,7 +243,7 @@ La topología de producción supera las cuatro auditorías obligatorias de `GUIA
 | Vista 4+1 | Documento Versionado | Rol en la Defensa Arquitectónica FIAVL | Estado |
 | :--- | :--- | :--- | :---: |
 | **Overview 42010 / 25010** | [`00-overview-42010.md`](./00-overview-42010.md) | Stakeholders (`INT-01`..`INT-05`), RNFs medibles (`RNF-01`..`RNF-05`) y Riesgos (`RSK-01`..`RSK-06`). | Completo |
-| **+1 Escenarios** | [`01-scenarios-view.md`](./01-scenarios-view.md) | 2 diagramas UML 2.5.1 limpios sin cruces (`CU-01`..`CU-11`) + 3 especificaciones Cockburn (`CU-02`, `CU-03`, `CU-07`). | Completo |
+| **+1 Escenarios** | [`01-scenarios-view.md`](./01-scenarios-view.md) | Diagrama único UML 2.5.1 limpio sin cruces (`CU-01`..`CU-11`) + 3 especificaciones Cockburn (`CU-02`, `CU-03`, `CU-07`). | Completo |
 | **Vista Lógica** | [`02-logical-view.md`](./02-logical-view.md) | 15 clases puras de dominio (R4), 2 máquinas de estado, CRC y diccionario (`RN-01`..`RN-17`). | Completo |
 | **Vista de Procesos** | [`03-process-view.md`](./03-process-view.md) | Secuencias ECB estrictas (R3, 0 `Boundary ↔ Entity`), `[critical]` atómico, despacho `-)` asíncrono y trazabilidad 1:1. | Completo |
 | **Vista de Desarrollo** | [`04-development-view.md`](./04-development-view.md) | 3 capas acíclicas `Domain → Utility → Platform` (R2), Prueba del Ácido, Componentes UML 2.5.1 y 3 ADRs. | Completo |

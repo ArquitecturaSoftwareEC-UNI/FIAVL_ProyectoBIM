@@ -22,30 +22,55 @@ La **Vista de Escenarios (+1)** define el comportamiento externo del sistema com
 
 ---
 
-## 2. Diagramas de Casos de Uso UML 2.5.1 (Mermaid / DeepWiki)
+## 2. Diagrama de Casos de Uso UML 2.5.1 (Mermaid / DeepWiki)
 
-Para evitar cruces de líneas (*diagrama espagueti*) y facilitar la lectura ejecutiva y en DeepWiki sin perder la trazabilidad completa `CU-01`..`CU-11` con las Vistas Lógica (`02`) y de Procesos (`03`), el límite del sistema se presenta en **dos vistas limpias por frontera funcional** (práctica estándar UML 2.5.1 para sistemas con más de 8 casos de uso). Los 3 **Casos Arquitectónicamente Significativos** (`CU-02`, `CU-03`, `CU-07`) se resaltan en azul y el caso transversal de seguridad (`CU-11`) en amarillo.
-
-### Diagrama 1A — Experiencia del Asistente y Reservas (`CU-01`..`CU-05`, `CU-11`)
+Un único diagrama limpio ordena los **11 casos de uso (`CU-01`..`CU-11`)** alineados por franja de actor (Asistente arriba, Organizador al centro, Tiempo abajo) y ubica `CU-11 Autenticar usuario` como servicio transversal para minimizar cruces. Los **3 Casos Arquitectónicamente Significativos** (`CU-02`, `CU-03`, `CU-07`) se resaltan en azul y `CU-11` en amarillo.
 
 ```mermaid
 flowchart LR
-  ACT_ASIST["«actor» Asistente\n(Publico / Turista)"]
-
-  subgraph SYS_A["Limite del Sistema FIAVL: Experiencia del Asistente y Reservas"]
+  subgraph PRIMARIOS["Actores Primarios"]
     direction TB
-    CU01(["CU-01 Explorar cartelera oficial"])
-    CU02(["CU-02 Gestionar itinerario urbano"])
-    CU03(["CU-03 Reservar cupo en funcion pagada"])
-    CU04(["CU-04 Cancelar reserva de cupo"])
-    CU05(["CU-05 Gestionar consentimiento y avisos"])
+    ACT_ASIST["«actor» Asistente\n(Publico / Turista)"]
+    ACT_ORG["«actor» Organizador\n(Gestion FIAVL)"]
+    ACT_TIEMPO["«actor» Tiempo\n(Temporizador)"]
+  end
+
+  subgraph SYS["Limite del Sistema: Gestor de Programacion e Itinerarios Urbanos — FIAVL"]
+    direction TB
+    subgraph G_ASIST["Experiencia del Asistente"]
+      direction TB
+      CU01(["CU-01 Explorar cartelera oficial"])
+      CU02(["CU-02 Gestionar itinerario urbano"])
+      CU03(["CU-03 Reservar cupo en funcion pagada"])
+      CU04(["CU-04 Cancelar reserva de cupo"])
+      CU05(["CU-05 Gestionar consentimiento y avisos"])
+    end
+
+    subgraph G_ORG["Gestion del Festival"]
+      direction TB
+      CU06(["CU-06 Mantener programacion del festival"])
+      CU07(["CU-07 Publicar alerta operativa"])
+      CU08(["CU-08 Controlar ocupacion y validar reservas"])
+    end
+
+    subgraph G_AUTO["Procesos Automaticos"]
+      direction TB
+      CU09(["CU-09 Liberar cupos de reservas vencidas"])
+      CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
+    end
+
     CU11(["CU-11 Autenticar usuario"])
 
     CU02 -. "«include»" .-> CU01
-    CU03 -. "«extend» [si funcion pagada]" .-> CU02
+    CU03 -. "«extend» [si pagada]" .-> CU02
     CU03 -. "«include»" .-> CU01
+    CU07 -. "«extend» [si cambio]" .-> CU06
+
     CU03 -. "«include»" .-> CU11
     CU04 -. "«include»" .-> CU11
+    CU06 -. "«include»" .-> CU11
+    CU07 -. "«include»" .-> CU11
+    CU08 -. "«include»" .-> CU11
   end
 
   ACT_MSG["«actor» Servicio de Mensajeria\n(Correo / Web Push)"]
@@ -56,42 +81,6 @@ flowchart LR
   ACT_ASIST --- CU04
   ACT_ASIST --- CU05
 
-  CU03 --- ACT_MSG
-  CU04 --- ACT_MSG
-
-  style ACT_ASIST fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
-  style ACT_MSG fill:#F5F5F5,stroke:#666666,color:#1a1a1a
-  style CU02 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style CU03 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style CU11 fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
-```
-
-### Diagrama 1B — Gestión del Festival y Procesos Automáticos (`CU-06`..`CU-11`)
-
-```mermaid
-flowchart LR
-  subgraph PRIM_B["Actores Primarios"]
-    ACT_ORG["«actor» Organizador\n(Gestion FIAVL)"]
-    ACT_TIEMPO["«actor» Tiempo\n(Temporizador del Sistema)"]
-  end
-
-  subgraph SYS_B["Limite del Sistema FIAVL: Operacion del Festival y Automatizacion"]
-    direction TB
-    CU06(["CU-06 Mantener programacion del festival"])
-    CU07(["CU-07 Publicar alerta operativa"])
-    CU08(["CU-08 Controlar ocupacion y validar reservas"])
-    CU11B(["CU-11 Autenticar usuario"])
-    CU09(["CU-09 Liberar cupos de reservas vencidas"])
-    CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
-
-    CU07 -. "«extend» [si cambia sala, horario o estado]" .-> CU06
-    CU06 -. "«include»" .-> CU11B
-    CU07 -. "«include»" .-> CU11B
-    CU08 -. "«include»" .-> CU11B
-  end
-
-  ACT_MSG_B["«actor» Servicio de Mensajeria\n(Correo / Web Push)"]
-
   ACT_ORG --- CU06
   ACT_ORG --- CU07
   ACT_ORG --- CU08
@@ -99,14 +88,22 @@ flowchart LR
   ACT_TIEMPO --- CU09
   ACT_TIEMPO --- CU10
 
-  CU07 --- ACT_MSG_B
-  CU10 --- ACT_MSG_B
+  CU03 --- ACT_MSG
+  CU04 --- ACT_MSG
+  CU07 --- ACT_MSG
+  CU10 --- ACT_MSG
 
+  style ACT_ASIST fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
   style ACT_ORG fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
   style ACT_TIEMPO fill:#F5F5F5,stroke:#666666,color:#1a1a1a
-  style ACT_MSG_B fill:#F5F5F5,stroke:#666666,color:#1a1a1a
+  style ACT_MSG fill:#F5F5F5,stroke:#666666,color:#1a1a1a
+  style CU02 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style CU03 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
   style CU07 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
-  style CU11B fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
+  style CU11 fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
+  style G_ASIST fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
+  style G_ORG fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
+  style G_AUTO fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
 ```
 
 ### Justificación Estricta de Relaciones `«include»` y `«extend»`
