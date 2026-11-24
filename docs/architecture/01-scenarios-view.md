@@ -22,50 +22,75 @@ La **Vista de Escenarios (+1)** define el comportamiento externo del sistema com
 
 ---
 
-## 2. Diagrama de Casos de Uso UML 2.5.1 (Mermaid / DeepWiki)
+## 2. Diagramas de Casos de Uso UML 2.5.1 (Mermaid / DeepWiki)
+
+Para evitar cruces de líneas (*diagrama espagueti*) y facilitar la lectura ejecutiva y en DeepWiki sin perder la trazabilidad completa `CU-01`..`CU-11` con las Vistas Lógica (`02`) y de Procesos (`03`), el límite del sistema se presenta en **dos vistas limpias por frontera funcional** (práctica estándar UML 2.5.1 para sistemas con más de 8 casos de uso). Los 3 **Casos Arquitectónicamente Significativos** (`CU-02`, `CU-03`, `CU-07`) se resaltan en azul y el caso transversal de seguridad (`CU-11`) en amarillo.
+
+### Diagrama 1A — Experiencia del Asistente y Reservas (`CU-01`..`CU-05`, `CU-11`)
 
 ```mermaid
 flowchart LR
-  subgraph PRIMARIOS["Actores Primarios"]
-    ACT_ASIST["«actor» Asistente (Publico / Turista)"]
-    ACT_ORG["«actor» Organizador (Gestion FIAVL)"]
-    ACT_TIEMPO["«actor» Tiempo (Temporizador del Sistema)"]
-  end
+  ACT_ASIST["«actor» Asistente\n(Publico / Turista)"]
 
-  subgraph SYS["Limite del Sistema: Gestor de Programacion e Itinerarios Urbanos FIAVL"]
+  subgraph SYS_A["Limite del Sistema FIAVL: Experiencia del Asistente y Reservas"]
+    direction TB
     CU01(["CU-01 Explorar cartelera oficial"])
     CU02(["CU-02 Gestionar itinerario urbano"])
     CU03(["CU-03 Reservar cupo en funcion pagada"])
     CU04(["CU-04 Cancelar reserva de cupo"])
     CU05(["CU-05 Gestionar consentimiento y avisos"])
-    CU06(["CU-06 Mantener programacion del festival"])
-    CU07(["CU-07 Publicar alerta operativa"])
-    CU08(["CU-08 Controlar ocupacion y validar reservas"])
-    CU09(["CU-09 Liberar cupos de reservas vencidas"])
-    CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
     CU11(["CU-11 Autenticar usuario"])
 
     CU02 -. "«include»" .-> CU01
+    CU03 -. "«extend» [si funcion pagada]" .-> CU02
     CU03 -. "«include»" .-> CU01
     CU03 -. "«include»" .-> CU11
     CU04 -. "«include»" .-> CU11
-    CU06 -. "«include»" .-> CU11
-    CU07 -. "«include»" .-> CU11
-    CU08 -. "«include»" .-> CU11
-
-    CU03 -. "«extend» [si funcion pagada]" .-> CU02
-    CU07 -. "«extend» [si cambia sala, horario o estado]" .-> CU06
   end
 
-  subgraph SECUNDARIOS["Actores Secundarios"]
-    ACT_MSG["«actor» Servicio de Mensajeria (Correo / Web Push)"]
-  end
+  ACT_MSG["«actor» Servicio de Mensajeria\n(Correo / Web Push)"]
 
   ACT_ASIST --- CU01
   ACT_ASIST --- CU02
   ACT_ASIST --- CU03
   ACT_ASIST --- CU04
   ACT_ASIST --- CU05
+
+  CU03 --- ACT_MSG
+  CU04 --- ACT_MSG
+
+  style ACT_ASIST fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style ACT_MSG fill:#F5F5F5,stroke:#666666,color:#1a1a1a
+  style CU02 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style CU03 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style CU11 fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
+```
+
+### Diagrama 1B — Gestión del Festival y Procesos Automáticos (`CU-06`..`CU-11`)
+
+```mermaid
+flowchart LR
+  subgraph PRIM_B["Actores Primarios"]
+    ACT_ORG["«actor» Organizador\n(Gestion FIAVL)"]
+    ACT_TIEMPO["«actor» Tiempo\n(Temporizador del Sistema)"]
+  end
+
+  subgraph SYS_B["Limite del Sistema FIAVL: Operacion del Festival y Automatizacion"]
+    direction TB
+    CU06(["CU-06 Mantener programacion del festival"])
+    CU07(["CU-07 Publicar alerta operativa"])
+    CU08(["CU-08 Controlar ocupacion y validar reservas"])
+    CU11B(["CU-11 Autenticar usuario"])
+    CU09(["CU-09 Liberar cupos de reservas vencidas"])
+    CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
+
+    CU07 -. "«extend» [si cambia sala, horario o estado]" .-> CU06
+    CU06 -. "«include»" .-> CU11B
+    CU07 -. "«include»" .-> CU11B
+    CU08 -. "«include»" .-> CU11B
+  end
+
+  ACT_MSG_B["«actor» Servicio de Mensajeria\n(Correo / Web Push)"]
 
   ACT_ORG --- CU06
   ACT_ORG --- CU07
@@ -74,10 +99,14 @@ flowchart LR
   ACT_TIEMPO --- CU09
   ACT_TIEMPO --- CU10
 
-  CU03 --- ACT_MSG
-  CU04 --- ACT_MSG
-  CU07 --- ACT_MSG
-  CU10 --- ACT_MSG
+  CU07 --- ACT_MSG_B
+  CU10 --- ACT_MSG_B
+
+  style ACT_ORG fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
+  style ACT_TIEMPO fill:#F5F5F5,stroke:#666666,color:#1a1a1a
+  style ACT_MSG_B fill:#F5F5F5,stroke:#666666,color:#1a1a1a
+  style CU07 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
+  style CU11B fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
 ```
 
 ### Justificación Estricta de Relaciones `«include»` y `«extend»`
