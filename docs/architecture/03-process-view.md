@@ -152,7 +152,7 @@ flowchart TD
 | `Aforo` | `«entity»` | Dominio | Ejecuta el descuento atómico de cupos disponibles bajo exclusión mutua (`descontar`, `estaLleno`). | Entidad clave de [`02-logical-view.md`](./02-logical-view.md) §6.8 (`RN-06`, `RSK-01`). |
 | `ReservaCupo` | `«entity»` | Dominio | Registra la reserva nominal en estado `Reservada` con código único y vencimiento (`emitir`, `estaVigente`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.11 (`RN-11`). |
 | `Itinerario` | `«entity»` | Dominio | Vincula la función reservada al recorrido personal del asistente (`incorporar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.9. |
-| `Aviso` | `«entity»` | Dominio | Persiste la constancia de confirmación en la bandeja interna del asistente (`marcarLeido`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.13 (`RN-15`). |
+| `Aviso` | `«entity»` | Dominio | Registra la constancia de confirmación sin leer en la bandeja interna del asistente (`registrar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.13 (`RN-15`). |
 | `EnvioNotificacion` | `«entity»` | Dominio | Rastrea el estado del intento de entrega externa (`marcarEnviado`, `registrarFallo`, `reintentar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.14 (`RN-15`). |
 | `RegistroAuditoria` | `«entity»` | Dominio | Almacena la traza inmutable de la reserva con marca de tiempo del servidor (`registrar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.15 (`RN-16`, `RNF-03`). |
 
@@ -174,7 +174,7 @@ flowchart TD
 | `Sede` | `«entity»` | Dominio | Valida disponibilidad si la alerta involucra traslado de sala (`estaDisponible`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.6 (`RN-05`). |
 | `AlertaOperativa` | `«entity»` | Dominio | Almacena el comunicado oficial (`publicar`) y genera el aviso por afectado (`generarAviso`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.12 (`RN-14`, `RN-16`). |
 | `Asistente` | `«entity»` | Dominio | Verifica si tiene consentimiento LOPDP activo para el canal externo (`tieneConsentimiento`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.2 (`RN-03`, `SUP-07`). |
-| `Aviso` | `«entity»` | Dominio | Almacena el aviso en la bandeja del asistente afectado (`marcarLeido`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.13 (`RN-15`). |
+| `Aviso` | `«entity»` | Dominio | Representa el aviso creado sin leer en la bandeja del asistente afectado (originado por `AlertaOperativa.generarAviso`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.13 (`RN-15`). |
 | `EnvioNotificacion` | `«entity»` | Dominio | Registra estado del despacho (`marcarEnviado`, `registrarFallo`, `reintentar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.14 (`RN-15`). |
 | `RegistroAuditoria` | `«entity»` | Dominio | Registra la publicación oficial o el intento no autorizado de forma inmutable (`registrar`). | Entidad de [`02-logical-view.md`](./02-logical-view.md) §6.15 (`RN-16`, `RNF-03`). |
 
@@ -263,12 +263,12 @@ sequenceDiagram
         ITIN-->>CTRL: itemCreado
     end
 
-    opt Resiliencia en calle: sincronizacion local PWA (Flujo 7a / RNF-01)
-        par Actualizacion de almacenamiento local en cliente
-            CTRL-->>UI: itinerarioActualizado
+    CTRL-->>UI: itinerarioActualizado
+    par Confirmacion visual al Asistente
+        UI-->>AS: confirmarIncorporacion("Actividad guardada en itinerario")
+    and Resiliencia en calle: sincronizacion local PWA (Flujo 7a / RNF-01)
+        opt Almacenamiento local PWA disponible
             UI->>UI: sincronizarCacheLocal()
-        and Confirmacion visual al Asistente
-            UI-->>AS: confirmarIncorporacion("Actividad guardada en itinerario")
         end
     end
 ```
@@ -299,6 +299,7 @@ sequenceDiagram
     participant ITIN as «entity» Itinerario
     participant AVISO as «entity» Aviso
     participant AUD as «entity» RegistroAuditoria
+    participant DESP as «control» DespachadorNotificacionesControl
     participant PAS as «boundary» PasarelaMensajeria
     participant ENV as «entity» EnvioNotificacion
 
@@ -355,39 +356,42 @@ sequenceDiagram
     RES-->>CTRL: reservaCreada
     CTRL->>ITIN: incorporar(actividad)
     ITIN-->>CTRL: itemItinerario
-    CTRL->>AVISO: marcarLeido()
+    CTRL->>AVISO: registrar(ConfirmacionReserva, mensaje)
     CTRL->>AUD: registrar(ReservaCupo, idFuncion, "Reserva exitosa", Exitosa)
 
-    Note over CTRL,PAS: Despacho Asincrono y Confirmacion Inmediata (RNF-02 / SUP-05)
+    Note over CTRL,DESP: Despacho Asincrono y Confirmacion Inmediata (RNF-02 / SUP-05)
     CTRL->>ASIST: tieneConsentimiento(CorreoElectronico)
     ASIST-->>CTRL: tieneConsentimiento (Booleano)
-    
+
     opt Consentimiento LOPDP otorgado (RN-03)
-        CTRL-)PAS: encolarConfirmacion(codigo, idAsistente)
+        CTRL-)DESP: encolarConfirmacion(codigo, idAsistente)
     end
 
     CTRL-->>UI: reservaExitosa(codigo, vencimiento)
     UI-->>AS: mostrarComprobante(codigo, "Valido hasta 30 min antes")
 
-    Note over PAS,SM: Procesamiento en Segundo Plano (Tolerancia a fallos de red)
+    Note over DESP,SM: Procesamiento en Segundo Plano (Worker de Mensajeria / Tolerancia a fallos)
     opt Despacho asincrono desacoplado
-        PAS-)SM: despacharNotificacion(payload)
+        DESP-)PAS: despacharNotificacion(payload)
+        PAS-)SM: enviarNotificacion(payload)
         alt Proveedor externo no responde o cae (Flujo alterno 8a / RSK-03)
             SM-->>PAS: errorConexion / timeout 5s
-            PAS->>ENV: registrarFallo()
+            PAS-->>DESP: falloEntrega
+            DESP->>ENV: registrarFallo()
             opt Reintentos configurados pendientes
-                PAS->>ENV: reintentar()
+                DESP->>ENV: reintentar()
             end
         else Entrega exitosa al proveedor
             SM-->>PAS: ack200
-            PAS->>ENV: marcarEnviado()
+            PAS-->>DESP: entregaConfirmada
+            DESP->>ENV: marcarEnviado()
         end
     end
 ```
 
 #### Aspectos dinámicos y de robustez verificados en `CU-03`:
 1. **Exclusión Mutua Estricta (`[critical]`):** la invocación `AFORO: descontar(cantidad)` se ejecuta dentro de una transacción con aislamiento serializable / bloqueo de fila a nivel de persistencia, impidiendo que 50 peticiones simultáneas sobrevendan el último cupo (`0 sobreventas`, `RNF-02`).
-2. **Desacoplamiento Asíncrono (`-)`):** la confirmación al Asistente y la persistencia de la reserva se completan en el paso 25 **antes** de que el proveedor externo de correo responda. Si el `ServicioMensajeria` cae (`Flujo 8a`), la reserva **no se revierte**; la notificación queda en cola con reintentos controlados en `EnvioNotificacion` (`RSK-03`).
+2. **Desacoplamiento Asíncrono (`-)`) y Aislamiento ECB:** la confirmación al Asistente (`reservaExitosa`) y la persistencia de la reserva se completan **antes** de que el proveedor externo de correo responda. Si el `ServicioMensajeria` cae (`Flujo 8a`), la reserva **no se revierte**; `PasarelaMensajeria` (`«boundary»`) devuelve el estado al `DespachadorNotificacionesControl` (`«control»`), único autorizado para actualizar `EnvioNotificacion` (`«entity»`) con reintentos controlados (`RSK-03`, `R3`).
 
 ---
 
@@ -410,6 +414,7 @@ sequenceDiagram
     participant ASIST as «entity» Asistente
     participant AVISO as «entity» Aviso
     participant AUD as «entity» RegistroAuditoria
+    participant DESP as «control» DespachadorNotificacionesControl
     participant PAS as «boundary» PasarelaMensajeria
     participant ENV as «entity» EnvioNotificacion
 
@@ -464,7 +469,6 @@ sequenceDiagram
     loop Por cada Asistente con la actividad en itinerario o con reserva activa
         CTRL->>ALERTA: generarAviso(asistente)
         ALERTA-->>CTRL: avisoCreado
-        CTRL->>AVISO: marcarLeido()
         CTRL->>ASIST: tieneConsentimiento(CorreoElectronico)
         ASIST-->>CTRL: consentimientoActivo (Booleano)
         opt Consentimiento externo vigente (Flujo 4b LOPDP)
@@ -472,32 +476,32 @@ sequenceDiagram
         end
     end
 
-    Note over CTRL,PAS: Despacho Asincrono Masivo (SUP-05 / RNF-02)
-    CTRL-)PAS: despacharLoteNotificaciones(loteEnvios)
+    Note over CTRL,DESP: Despacho Asincrono Masivo (SUP-05 / RNF-02)
+    CTRL-)DESP: encolarLoteNotificaciones(loteEnvios)
     CTRL-->>UI: confirmacionPublicacion(idAlerta, totalAfectados)
     UI-->>ORG: mostrarConfirmacion("Alerta publicada y visible en cartelera")
 
-    Note over PAS,SM: Procesamiento en Segundo Plano (Worker de Mensajeria)
-    par Despacho asincrono de lotes externos
-        PAS-)SM: enviarLote(destinatariosConsentidos)
-    and Recepcion de respuestas y gestion de reintentos
-        alt Proveedor externo responde con exito
-            SM-->>PAS: ackLoteRecibido
-            PAS->>ENV: marcarEnviado()
-        else Proveedor externo saturado o caido (Flujo alterno 7a / RSK-03)
-            SM-->>PAS: errorConexion / timeout
-            PAS->>ENV: registrarFallo()
-            opt Reintentos pendientes
-                PAS->>ENV: reintentar()
-            end
+    Note over DESP,SM: Procesamiento en Segundo Plano (Worker de Mensajeria)
+    DESP-)PAS: despacharLote(destinatariosConsentidos)
+    PAS-)SM: enviarLote(destinatariosConsentidos)
+    alt Proveedor externo responde con exito
+        SM-->>PAS: ackLoteRecibido
+        PAS-->>DESP: loteConfirmado
+        DESP->>ENV: marcarEnviado()
+    else Proveedor externo saturado o caido (Flujo alterno 7a / RSK-03)
+        SM-->>PAS: errorConexion / timeout
+        PAS-->>DESP: falloLote
+        DESP->>ENV: registrarFallo()
+        opt Reintentos pendientes
+            DESP->>ENV: reintentar()
         end
     end
 ```
 
 #### Aspectos dinámicos y de robustez verificados en `CU-07`:
 1. **Seguridad y Auditoría Inmutable:** cualquier intento de mutación administrativa sin credencial autorizada dispara un registro `AccesoNoAutorizado` en `RegistroAuditoria` con resultado `Rechazada` antes de cortar la ejecución (`RNF-03`).
-2. **Privacidad por Diseño (LOPDP 2021):** la generación de avisos internos en la bandeja de la plataforma (`Aviso`) ocurre para el 100 % de los afectados; sin embargo, solo los asistentes con `Consentimiento.estaVigente() == true` se agregan al lote de envío externo hacia `PasarelaMensajeria` (`RN-03`, `SUP-07`).
-3. **Desacoplamiento de Despacho Masivo:** el Organizador recibe confirmación inmediata de publicación en el paso 23. Los cientos de correos/notificaciones se procesan de forma asíncrona mediante el worker en segundo plano, impidiendo bloqueos por latencia de red (`RNF-01`, `RNF-02`).
+2. **Privacidad por Diseño (LOPDP 2021):** la generación de avisos internos en la bandeja de la plataforma (`Aviso`) ocurre para el 100 % de los afectados (creados con `leido = Falso` por `AlertaOperativa.generarAviso`); sin embargo, solo los asistentes con `Consentimiento.estaVigente() == true` se agregan al lote de envío externo hacia `DespachadorNotificacionesControl` (`RN-03`, `SUP-07`).
+3. **Desacoplamiento de Despacho Masivo y Aislamiento ECB:** el Organizador recibe `confirmacionPublicacion` de forma inmediata. Los cientos de correos/notificaciones se procesan de forma asíncrona mediante `DespachadorNotificacionesControl` (`«control»`), que invoca a `PasarelaMensajeria` (`«boundary»`) y registra el resultado en `EnvioNotificacion` (`«entity»`), manteniendo 0 acoplamientos `«boundary» <-> «entity»` (`R3`, `RNF-01`, `RNF-02`).
 
 ---
 
@@ -540,7 +544,7 @@ flowchart TB
   PROC_WEB -->|"Encola tareas asincronas\n(IPC / Broker / Cola)"| PROC_WORKER
   PROC_WEB -->|"Conexiones de pool\n(Transacciones ACID / Locks)"| PROC_BD
   PROC_WORKER -->|"Actualiza estados de envio"| PROC_BD
-  PROC_BROWSER <-->|"HTTPS sweb requests"| PROC_WEB
+  PROC_BROWSER <-->|"HTTPS web requests"| PROC_WEB
 
   style NODO_APP fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
   style NODO_WORKER fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
@@ -579,7 +583,7 @@ El fragmento `[critical]` en `CU-03` garantiza **0 sobreventas** bajo la siguien
 
 ### 5.5 Desacoplamiento y Tolerancia a Fallos de Red
 Para cumplir con la meta de que el **100 % de reservas y publicaciones continúe operando ante la caída de servicios externos** (`RNF-02`, `RSK-03`):
-1. **Despacho asíncrono no bloqueante (`-)`):** la frontera `PasarelaMensajeria` deposita el mensaje en una cola duradera o tabla de despacho dentro de la misma transacción o inmediatamente después, retornando control en `< 5 ms`.
+1. **Despacho asíncrono no bloqueante (`-)`):** los controladores síncronos (`GestorReservaControl`, `GestorAlertaControl`) encolan el mensaje de forma asíncrona hacia `DespachadorNotificacionesControl` dentro de la misma transacción o inmediatamente después, retornando control en `< 5 ms`.
 2. **Aislamiento de hilos:** ningún hilo del `Proceso API Web` queda en espera del socket de red del proveedor SMTP/Push.
 3. **Reintentos en segundo plano:** el `Proceso Worker Asíncrono` intenta la entrega externa; si detecta error de conexión o *timeout* de 5 segundos, actualiza `EnvioNotificacion.estado = Fallido` y programa un reintento con retroceso exponencial, sin afectar la cartelera ni los cupos reservados.
 
@@ -619,7 +623,8 @@ En estricto cumplimiento de la regla metodológica de trazabilidad 1:1, se audit
 | `ReservaCupo` | `«entity»` | `emitir(codigo, cantidad, vencimiento)` | `ReservaCupo` (§6.11) | Sí (adicionado en PR) | **EXACTO** |
 | `AlertaOperativa` | `«entity»` | `generarAviso(asistente)` | `AlertaOperativa` (§6.12) | Sí (línea 305) | **EXACTO** |
 | `AlertaOperativa` | `«entity»` | `publicar(tipo, mensaje)` | `AlertaOperativa` (§6.12) | Sí (adicionado en PR) | **EXACTO** |
-| `Aviso` | `«entity»` | `marcarLeido()` | `Aviso` (§6.13) | Sí (línea 313) | **EXACTO** |
+| `Aviso` | `«entity»` | `registrar(tipo, mensaje)` | `Aviso` (§6.13) | Sí (adicionado en PR) | **EXACTO** |
+| `Aviso` | `«entity»` | `marcarLeido()` | `Aviso` (§6.13) | Sí (línea 318) | **EXACTO** |
 | `EnvioNotificacion` | `«entity»` | `marcarEnviado()` | `EnvioNotificacion` (§6.14) | Sí (línea 321) | **EXACTO** |
 | `EnvioNotificacion` | `«entity»` | `registrarFallo()` | `EnvioNotificacion` (§6.14) | Sí (línea 322) | **EXACTO** |
 | `EnvioNotificacion` | `«entity»` | `reintentar()` | `EnvioNotificacion` (§6.14) | Sí (línea 323) | **EXACTO** |
@@ -627,17 +632,17 @@ En estricto cumplimiento de la regla metodológica de trazabilidad 1:1, se audit
 | `Sede` | `«entity»` | `estaDisponible(inicio, fin)` | `Sede` (§6.6) | Sí (línea 244) | **EXACTO** |
 | `EdicionFestival` | `«entity»` | `contieneFecha(fecha)` | `EdicionFestival` (§6.5) | Sí (línea 236) | **EXACTO** |
 
-> **Nota de Sincronización:** Durante el análisis dinámico de transiciones de estado y persistencia de eventos, se añadieron formalmente las operaciones `Actividad.marcarAforoLleno()`, `Actividad.reabrirAforo()`, `ReservaCupo.emitir()`, `AlertaOperativa.publicar()` y `RegistroAuditoria.registrar()` en [`docs/architecture/02-logical-view.md`](./02-logical-view.md) (Diagramas 2, 2A, 2B, 2C y Diccionario §6) dentro de este mismo Pull Request, garantizando **cero firmas huérfanas o divergentes**.
+> **Nota de Sincronización:** Durante el análisis dinámico de transiciones de estado y persistencia de eventos, se añadieron formalmente las operaciones `Actividad.marcarAforoLleno()`, `Actividad.reabrirAforo()`, `ReservaCupo.emitir()`, `AlertaOperativa.publicar()`, `Aviso.registrar()` y `RegistroAuditoria.registrar()` en [`docs/architecture/02-logical-view.md`](./02-logical-view.md) (Diagramas 2, 2A, 2B, 2C y Diccionario §6) dentro de este mismo Pull Request, garantizando **cero firmas huérfanas o divergentes**.
 
 ---
 
 ## 7. Lista de Verificación de Calidad y Cierre de la Vista de Procesos
 
 - [x] **R1 (Compuerta SDD):** Derivada estrictamente de la especificación aprobada [`specs/000-tdr/tdr-y-requisitos.md`](../../specs/000-tdr/tdr-y-requisitos.md) y los casos Cockburn de [`docs/architecture/01-scenarios-view.md`](./01-scenarios-view.md).
-- [x] **R3 (Patrón ECB estricto):** Cero comunicaciones directas `«boundary» <-> «entity»` en todos los diagramas; todos los flujos son mediados por `«control»`.
+- [x] **R3 (Patrón ECB estricto):** Cero comunicaciones directas `«boundary» <-> «entity»` en todos los diagramas; todos los flujos (incluyendo el despacho asíncrono vía `DespachadorNotificacionesControl`) son mediados por `«control»`.
 - [x] **R3 (Anti-God Class):** Los controladores únicamente coordinan la orquestación; las invariantes de negocio residen en las `«entity»` de la Vista Lógica.
 - [x] **R4 (Pureza conceptual de entidades):** Las entidades participantes no contienen conceptos de almacenamiento físico, SQL ni UI.
-- [x] **R6 (Mermaid compatible con DeepWiki):** 4 bloques Mermaid estándar (`flowchart` ×1, `sequenceDiagram` ×3) validados localmente mediante `mmdc` con 0 errores sintácticos.
+- [x] **R6 (Mermaid compatible con DeepWiki):** 6 bloques Mermaid estándar (`flowchart` ×3, `sequenceDiagram` ×3) validados localmente mediante `mmdc` con 0 errores sintácticos.
 - [x] **Fragmentos combinados:** Uso explícito de `alt`, `opt`, `loop`, `break`, `par` y el bloque obligatorio `critical` en `CU-03`.
-- [x] **Tipos de comunicación:** Diferenciación inequívoca entre llamadas síncronas (`->>`) y despacho asíncrono con flecha abierta (`-)`) hacia la pasarela de mensajería.
-- [x] **Correspondencia 1:1:** 35/35 operaciones de entidad auditadas y verificadas con firma idéntica en [`docs/architecture/02-logical-view.md`](./02-logical-view.md).
+- [x] **Tipos de comunicación:** Diferenciación inequívoca entre llamadas síncronas (`->>`) y despacho asíncrono con flecha abierta (`-)`) hacia el worker y la pasarela de mensajería.
+- [x] **Correspondencia 1:1:** 36/36 operaciones de entidad auditadas y verificadas con firma idéntica en [`docs/architecture/02-logical-view.md`](./02-logical-view.md).

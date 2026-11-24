@@ -314,6 +314,7 @@ classDiagram
     -mensaje : Texto
     -fechaEntrega : FechaHora
     -leido : Booleano
+    +registrar(tipo, mensaje)
     +marcarLeido()
   }
   class EnvioNotificacion {
@@ -633,6 +634,7 @@ classDiagram
     -mensaje : Texto
     -fechaEntrega : FechaHora
     -leido : Booleano
+    +registrar(tipo, mensaje)
     +marcarLeido()
   }
   class EnvioNotificacion {
@@ -1161,6 +1163,7 @@ stateDiagram-v2
 
 | Operación | Entrada | Salida | Propósito |
 | :-- | :-- | :-- | :-- |
+| `registrar` | `tipo`, `mensaje` | — | Crea el aviso en la bandeja del asistente con `leido = Falso` y fecha actual. |
 | `marcarLeido` | — | — | Registra que el asistente lo vio. |
 
 **Multiplicidades exactas:**
@@ -1262,7 +1265,7 @@ Se comprueba que cada caso significativo se puede “contar” usando solo clase
 | Vista | Qué toma de la Vista Lógica | Estado |
 | :-- | :-- | :-- |
 | **+1 Escenarios** ([01](./01-scenarios-view.md)) | Cada `CU-xx` ↔ clases según la matriz §4.2; las reglas de los flujos alternos están en `RN-xx` | Trazado completo |
-| **Procesos (ECB)** | Las 15 clases son los candidatos a `«entity»`. Los `«boundary»` y `«control»` **no** aparecen aquí (R3). Las operaciones de entidad son invariantes, no orquestación | Pendiente de la Vista de Procesos |
+| **Procesos (ECB)** ([03](./03-process-view.md)) | Las 15 clases son los candidatos a `«entity»`. Los `«boundary»` y `«control»` **no** aparecen aquí (R3). Las operaciones de entidad son invariantes, no orquestación | Trazado completo |
 | **Desarrollo** | Los 6 paquetes lógicos son la propuesta de módulos de `Domain` (`identidad`, `programacion`, `itinerario`, `reservas`, `avisos`, `auditoria`). La Vista de Desarrollo decide qué capacidades (p. ej. auditoría, notificaciones) pasan a `Utility` | Propuesta a confirmar (R2, 1:1) |
 | **Despliegue** | No aplica directamente; los artefactos manifestarán los paquetes de Desarrollo | Pendiente |
 
