@@ -28,69 +28,57 @@ Un único diagrama limpio ordena los **11 casos de uso (`CU-01`..`CU-11`)** alin
 
 ```mermaid
 flowchart LR
-  subgraph PRIMARIOS["Actores Primarios"]
-    direction TB
-    ACT_ASIST["«actor» Asistente\n(Publico / Turista)"]
-    ACT_ORG["«actor» Organizador\n(Gestion FIAVL)"]
-    ACT_TIEMPO["«actor» Tiempo\n(Temporizador)"]
-  end
+  ACT_ORG["«actor» Organizador\n(Gestion FIAVL)"]
+  ACT_ASIST["«actor» Asistente\n(Publico / Turista)"]
+  ACT_TIEMPO["«actor» Tiempo\n(Temporizador)"]
 
   subgraph SYS["Limite del Sistema: Gestor de Programacion e Itinerarios Urbanos — FIAVL"]
     direction TB
-    subgraph G_ASIST["Experiencia del Asistente"]
-      direction TB
-      CU01(["CU-01 Explorar cartelera oficial"])
-      CU02(["CU-02 Gestionar itinerario urbano"])
-      CU03(["CU-03 Reservar cupo en funcion pagada"])
-      CU04(["CU-04 Cancelar reserva de cupo"])
-      CU05(["CU-05 Gestionar consentimiento y avisos"])
-    end
+    CU06(["CU-06 Mantener programacion del festival"])
+    CU07(["CU-07 Publicar alerta operativa"])
+    CU08(["CU-08 Controlar ocupacion y validar reservas"])
 
-    subgraph G_ORG["Gestion del Festival"]
-      direction TB
-      CU06(["CU-06 Mantener programacion del festival"])
-      CU07(["CU-07 Publicar alerta operativa"])
-      CU08(["CU-08 Controlar ocupacion y validar reservas"])
-    end
+    CU05(["CU-05 Gestionar consentimiento y avisos"])
+    CU01(["CU-01 Explorar cartelera oficial"])
+    CU02(["CU-02 Gestionar itinerario urbano"])
+    CU03(["CU-03 Reservar cupo en funcion pagada"])
+    CU04(["CU-04 Cancelar reserva de cupo"])
 
-    subgraph G_AUTO["Procesos Automaticos"]
-      direction TB
-      CU09(["CU-09 Liberar cupos de reservas vencidas"])
-      CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
-    end
+    CU09(["CU-09 Liberar cupos de reservas vencidas"])
+    CU10(["CU-10 Enviar recordatorios y avisos de aforo lleno"])
 
     CU11(["CU-11 Autenticar usuario"])
 
+    CU07 -. "«extend» [si cambio]" .-> CU06
     CU02 -. "«include»" .-> CU01
     CU03 -. "«extend» [si pagada]" .-> CU02
     CU03 -. "«include»" .-> CU01
-    CU07 -. "«extend» [si cambio]" .-> CU06
 
-    CU03 -. "«include»" .-> CU11
-    CU04 -. "«include»" .-> CU11
     CU06 -. "«include»" .-> CU11
     CU07 -. "«include»" .-> CU11
     CU08 -. "«include»" .-> CU11
+    CU03 -. "«include»" .-> CU11
+    CU04 -. "«include»" .-> CU11
   end
 
   ACT_MSG["«actor» Servicio de Mensajeria\n(Correo / Web Push)"]
-
-  ACT_ASIST --- CU01
-  ACT_ASIST --- CU02
-  ACT_ASIST --- CU03
-  ACT_ASIST --- CU04
-  ACT_ASIST --- CU05
 
   ACT_ORG --- CU06
   ACT_ORG --- CU07
   ACT_ORG --- CU08
 
+  ACT_ASIST --- CU05
+  ACT_ASIST --- CU01
+  ACT_ASIST --- CU02
+  ACT_ASIST --- CU03
+  ACT_ASIST --- CU04
+
   ACT_TIEMPO --- CU09
   ACT_TIEMPO --- CU10
 
+  CU07 --- ACT_MSG
   CU03 --- ACT_MSG
   CU04 --- ACT_MSG
-  CU07 --- ACT_MSG
   CU10 --- ACT_MSG
 
   style ACT_ASIST fill:#E1D5E7,stroke:#9673A6,color:#1a1a1a
@@ -101,9 +89,7 @@ flowchart LR
   style CU03 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
   style CU07 fill:#DAE8FC,stroke:#6C8EBF,color:#1a1a1a
   style CU11 fill:#FFF2CC,stroke:#D6B656,color:#1a1a1a
-  style G_ASIST fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
-  style G_ORG fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
-  style G_AUTO fill:#F8FAFC,stroke:#CBD5E1,color:#1a1a1a
+  style SYS fill:#F8FAFC,stroke:#64748B,color:#1a1a1a
 ```
 
 ### Justificación Estricta de Relaciones `«include»` y `«extend»`
